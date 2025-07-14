@@ -13,7 +13,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
-  
+
   const renderContent = () => {
     switch (message.type) {
       case 'text':
@@ -22,7 +22,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             {message.content}
           </Text>
         );
-      
+
       case 'table':
         return (
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -41,8 +41,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             />
           </Space>
         );
-      
+
       case 'chart':
+        // Validate chart data before rendering
+        const hasValidData = message.data && Array.isArray(message.data) && message.data.length > 0;
+        const validatedData = hasValidData ? message.data.filter(item => item && typeof item === 'object') : [];
+
         return (
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
             {message.title && (
@@ -51,12 +55,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               </Title>
             )}
             <div style={{ width: '100%', height: '250px' }}>
-              {!message.data || message.data.length === 0 ? (
+              {!hasValidData || validatedData.length === 0 ? (
                 <div style={{ 
                   width: '100%', 
                   height: '100%', 
                   display: 'flex', 
-                  alignItems: 'center', 
+                  alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: '#f5f5f5',
                   borderRadius: '4px',
@@ -66,55 +70,69 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                {message.chartType === 'bar' && (
-                  <BarChart data={message.data}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey={message.config?.xField || 'name'} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey={message.config?.yField || 'value'} fill="#8884d8" />
-                  </BarChart>
-                )}
-                {message.chartType === 'line' && (
-                  <LineChart data={message.data}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey={message.config?.xField || 'name'} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey={message.config?.yField || 'value'} stroke="#8884d8" strokeWidth={2} />
-                  </LineChart>
-                )}
-                {(message.chartType === 'pie' || message.chartType === 'donut') && (
-                  <PieChart>
-                    <Pie
-                      data={message.data}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={message.chartType === 'donut' ? 40 : 0}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey={message.config?.angleField || 'value'}
-                      fill="#8884d8"
-                    >
-                      {message.data && message.data.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]} 
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                )}
+                  {message.chartType === 'bar' && (
+                    <BarChart data={validatedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey={message.config?.xField || 'name'} 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar 
+                        dataKey={message.config?.yField || 'value'} 
+                        fill="#8884d8" 
+                      />
+                    </BarChart>
+                  )}
+                  {message.chartType === 'line' && (
+                    <LineChart data={validatedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey={message.config?.xField || 'name'} 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey={message.config?.yField || 'value'} 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                      />
+                    </LineChart>
+                  )}
+                  {(message.chartType === 'pie' || message.chartType === 'donut') && (
+                    <PieChart margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <Pie
+                        data={validatedData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={message.chartType === 'donut' ? 40 : 0}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey={message.config?.angleField || 'value'}
+                      >
+                        {validatedData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  )}
                 </ResponsiveContainer>
               )}
             </div>
           </Space>
         );
-      
+
       default:
         return <Text>Unsupported message type</Text>;
     }
